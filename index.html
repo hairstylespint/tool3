@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Link Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #output {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h2>Image Link Extractor</h2>
+    <textarea id="inputCode" placeholder="Masukkan kode view-source di sini..."></textarea>
+    <br>
+    <button id="convertBtn">Convert</button>
+    <button id="copyBtn">Copy Hasil</button>
+    <div id="output"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("convertBtn").addEventListener("click", extractLinks);
+            document.getElementById("copyBtn").addEventListener("click", copyToClipboard);
+        });
+
+        async function getBlockedWords() {
+            try {
+                let response = await fetch("blok.txt");
+                if (!response.ok) throw new Error("Gagal memuat daftar blokir");
+                let text = await response.text();
+                return text.split(/\r?\n/).filter(word => word.trim() !== "");
+            } catch (error) {
+                console.error(error);
+                return [];
+            }
+        }
+
+        async function extractLinks() {
+            let inputCode = document.getElementById("inputCode").value;
+            let regex = /https?:\/\/(?!www\.bing\.com|r\.bing\.com)[^\s"',]+\.(?:jpg|jpeg|png|bmp|webp|svg)/gi;
+            let outputDiv = document.getElementById("output");
+            let result = new Set();
+            let match;
+            let blockedWords = await getBlockedWords();
+
+            while ((match = regex.exec(inputCode)) !== null) {
+                let link = match[0];
+                if (!blockedWords.some(word => link.includes(word))) {
+                    result.add(link);
+                }
+            }
+            
+            outputDiv.textContent = result.size > 0 ? Array.from(result).join("\n") : "Tidak ada link gambar ditemukan.";
+        }
+
+        function copyToClipboard() {
+            let textToCopy = document.getElementById("output").textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("Hasil telah disalin ke clipboard!");
+            }).catch(err => {
+                alert("Gagal menyalin: " + err);
+            });
+        }
+    </script>
+</body>
+</html>
